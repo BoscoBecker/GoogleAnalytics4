@@ -17,29 +17,40 @@ type
     function Operation: TOperationSession; overload;
     function Send: iCommand;
     function Execute: iCommand;
-    function BuidJsonEvent: String;
+    function BuildJsonEvent: String;
    End;
 implementation
 { TModelGoogleAnalyticsSession }
 uses
-  System.Net.HttpClientComponent, System.Classes, System.SysUtils,dialogs,REST.Client,REST.Types;
-function TModelGoogleAnalyticsSession.BuidJsonEvent: String;
+  System.Net.HttpClientComponent, System.Classes, System.SysUtils,dialogs,REST.Client,REST.Types,
+  System.JSON;
+
+function TModelGoogleAnalyticsSession.BuildJsonEvent: String;
+var
+  RootObject, EventObject, ParamsObject: TJSONObject;
+  EventsArray: TJSONArray;
 begin
-   result:=
-   StringReplace(
-    '{                                               '+
-    '    "client_id":"'+FParent.ClienteID+'",        '+
-    '	  "events":[                                   '+
-    '        {                                       '+
-    '            "name":"Start Session",             '+
-    '            "params":{                          '+
-    '                "engagement_time_msec":"1000",   '+
-    '                  "session_id":"999"            '+
-    '            }                                   '+
-    '        }                                       '+
-    '    ]                                           '+
-    '}                                               '+
-    '                                       ',#9,'',[rfreplaceall])
+  RootObject := TJSONObject.Create;
+  try
+    RootObject.AddPair('client_id', FParent.ClienteID);
+
+    EventsArray := TJSONArray.Create;
+    RootObject.AddPair('events', EventsArray);
+
+    EventObject := TJSONObject.Create;
+    EventObject.AddPair('name', 'Start Session');
+
+    ParamsObject := TJSONObject.Create;
+    ParamsObject.AddPair('engagement_time_msec', '1000');
+    ParamsObject.AddPair('session_id', '999');
+
+    EventObject.AddPair('params', ParamsObject);
+    EventsArray.AddElement(EventObject);
+
+    Result := RootObject.ToJSON;
+  finally
+    RootObject.Free;
+  end;
 end;
 
 constructor TModelGoogleAnalyticsSession.Create(AParent: iControllerGoogleAnalytics);
@@ -59,7 +70,7 @@ var
   ResponseContent : string;
 begin
   Result  :=  Self;
-  ResponseStream:= TStringStream.Create(Self.BuidJsonEvent,TEncoding.UTF8);
+  ResponseStream:= TStringStream.Create(Self.BuildJsonEvent,TEncoding.UTF8);
   HTTPClient:= TNetHTTPClient.Create(nil);
   HTTPClient.CustomHeaders['Content-Type'] := 'application/json';
   try
