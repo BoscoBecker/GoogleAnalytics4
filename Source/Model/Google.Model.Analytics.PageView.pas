@@ -22,33 +22,43 @@ type
     function Title: String; overload;
     function Title(Value: String): iModelGooglePageView; overload;
     function Send: iCommand;
-    function BuidJsonEvent: String;
+    function BuildJsonEvent: String;
     function Execute: iCommand;
   End;
 implementation
 
 { TModelGoogleAnalyticsPageView }
 uses
-  System.Net.HttpClientComponent, System.Classes, System.SysUtils;
+  System.Net.HttpClientComponent, System.Classes, System.SysUtils, System.JSON;
 
-function TModelGoogleAnalyticsPageView.BuidJsonEvent: String;
+function TModelGoogleAnalyticsPageView.BuildJsonEvent: String;
+var
+  RootObject, EventObject, ParamsObject: TJSONObject;
+  EventsArray: TJSONArray;
 begin
-   result:=
-   StringReplace(
-    '{                                            '+
-    '    "client_id":"'+FParent.ClienteID+'",     '+
-    '    "events":[                               '+
-    '        {                                    '+
-    '            "name":"page_view",              '+
-    '            "params":{                       '+
-    '                "page_location":"'+FPage+'", '+
-    '                "page_title":"'+FTitle+'",  '+
-    '							   "send_page_view":"True"      '+
-    '            }                                '+
-    '        }                                    '+
-    '    ]                                        '+
-    '}                                            '+
-'                                             ',#9,'',[rfreplaceall]);
+  RootObject := TJSONObject.Create;
+  try
+    RootObject.AddPair('client_id', FParent.ClienteID);
+
+    EventsArray := TJSONArray.Create;
+    RootObject.AddPair('events', EventsArray);
+
+    EventObject := TJSONObject.Create;
+    EventObject.AddPair('name', 'page_view');
+
+    ParamsObject := TJSONObject.Create;
+    ParamsObject.AddPair('page_location', FPage);
+    ParamsObject.AddPair('page_title', FTitle);
+    ParamsObject.AddPair('send_page_view', 'True');
+
+    EventObject.AddPair('params', ParamsObject);
+
+    EventsArray.AddElement(EventObject);
+
+    Result := RootObject.ToJSON;
+  finally
+    RootObject.Free;
+  end;
 end;
 
 constructor TModelGoogleAnalyticsPageView.Create(AParent: iControllerGoogleAnalytics);
@@ -68,7 +78,7 @@ var
 begin
   Result  :=  Self;
   var json := '';
-  ResponseStream:= TStringStream.Create(self.BuidJsonEvent,TEncoding.UTF8);
+  ResponseStream:= TStringStream.Create(self.BuildJsonEvent,TEncoding.UTF8);
   HTTPClient:= TNetHTTPClient.Create(nil);
   HTTPClient.CustomHeaders['Content-Type'] := 'application/json';
   try
