@@ -3,7 +3,7 @@ interface
 uses
   Google.Model.Analytics.Interfaces,
   Google.Controller.Analytics,
-  Google.Controller.Analytics.Interfaces;
+  Google.Controller.Analytics.Interfaces, System.JSON;
 type
   TModelGoogleAnalyticsScreenView = Class(TInterfacedObject, iModelGoogleScreeView, iCommand)
   private
@@ -18,7 +18,7 @@ type
     function ScreenName: String; overload;
     function ScreenName(Value: String): iModelGoogleScreeView; overload;
     function Send: iCommand;
-    function BuidJsonEvent: String;
+    function BuildJsonEvent: String;
     function GetJsonScreenResolution: String;
     function GetJsonOS: String;
     //iCommand
@@ -46,7 +46,7 @@ var
 begin
   Result  :=  Self;
   var json := '';
-  ResponseStream:= TStringStream.Create(self.BuidJsonEvent,TEncoding.UTF8);
+  ResponseStream:= TStringStream.Create(self.BuildJsonEvent,TEncoding.UTF8);
   HTTPClient:= TNetHTTPClient.Create(nil);
   HTTPClient.CustomHeaders['Content-Type'] := 'application/json';
   try
@@ -90,58 +90,85 @@ begin
   end;
 end;
 function TModelGoogleAnalyticsScreenView.GetJsonOS: String;
+var
+  RootObject, EventObject, ParamsObject: TJSONObject;
+  EventsArray: TJSONArray;
 begin
-   result:=
-   StringReplace(
-    '{                                               '+
-    '    "client_id":"'+FParent.ClienteID+'",        '+
-    '	  "events":[                                   '+
-    '        {                                       '+
-    '            "name":"SistemaOperacional",         '+
-    '            "params":{                          '+
-    '            "SistemaOperacionalNome":"'+ 'Windows ' + FParent.SystemPlatform +'"'+
-    '            }                                   '+
-    '        }                                       '+
-    '    ]                                           '+
-    '}                                               '+
-    '                                       ',#9,'',[rfreplaceall]);
+  RootObject := TJSONObject.Create;
+  try
+    RootObject.AddPair('client_id', FParent.ClienteID);
+
+    EventsArray := TJSONArray.Create;
+    RootObject.AddPair('events', EventsArray);
+
+    EventObject := TJSONObject.Create;
+    EventObject.AddPair('name', 'SistemaOperacional');
+
+    ParamsObject := TJSONObject.Create;
+    ParamsObject.AddPair('SistemaOperacionalNome', 'Windows ' + FParent.SystemPlatform);
+
+    EventObject.AddPair('params', ParamsObject);
+    EventsArray.AddElement(EventObject);
+
+    Result := RootObject.ToJSON;
+  finally
+    RootObject.Free;
+  end;
 end;
 
 function TModelGoogleAnalyticsScreenView.GetJsonScreenResolution: String;
+var
+  RootObject, EventObject, ParamsObject: TJSONObject;
+  EventsArray: TJSONArray;
 begin
-   result:=
-   StringReplace(
-    '{                                               '+
-    '    "client_id":"'+FParent.ClienteID+'",        '+
-    '	  "events":[                                   '+
-    '        {                                       '+
-    '            "name":"screen_resolution",         '+
-    '            "params":{                          '+
-    '            "screen_width":"'+ FParent.ScreenResolution.GetX +'",'+
-		'				   	 "screen_height":"'+ FParent.ScreenResolution.GetY +'"'+
-    '            }                                   '+
-    '        }                                       '+
-    '    ]                                           '+
-    '}                                               '+
-    '                                       ',#9,'',[rfreplaceall]);
+  RootObject := TJSONObject.Create;
+  try
+    RootObject.AddPair('client_id', FParent.ClienteID);
+
+    EventsArray := TJSONArray.Create;
+    RootObject.AddPair('events', EventsArray);
+
+    EventObject := TJSONObject.Create;
+    EventObject.AddPair('name', 'screen_resolution');
+
+    ParamsObject := TJSONObject.Create;
+    ParamsObject.AddPair('screen_width', FParent.ScreenResolution.GetX);
+    ParamsObject.AddPair('screen_height', FParent.ScreenResolution.GetY);
+
+    EventObject.AddPair('params', ParamsObject);
+    EventsArray.AddElement(EventObject);
+
+    Result := RootObject.ToJSON;
+  finally
+    RootObject.Free;
+  end;
 end;
 
-function TModelGoogleAnalyticsScreenView.BuidJsonEvent: String;
+function TModelGoogleAnalyticsScreenView.BuildJsonEvent: String;
+var
+  RootObject, EventObject, ParamsObject: TJSONObject;
+  EventsArray: TJSONArray;
 begin
-   result:=
-   StringReplace(
-    '{                                               '+
-    '    "client_id":"'+FParent.ClienteID+'",        '+
-    '	  "events":[                                   '+
-    '        {                                       '+
-    '            "name":"screen_view",               '+
-    '            "params":{                          '+
-    '                "screen_name":"'+FScreenName+'" '+
-    '            }                                   '+
-    '        }                                       '+
-    '    ]                                           '+
-    '}                                               '+
-    '                                       ',#9,'',[rfreplaceall]);
+  RootObject := TJSONObject.Create;
+  try
+    RootObject.AddPair('client_id', FParent.ClienteID);
+
+    EventsArray := TJSONArray.Create;
+    RootObject.AddPair('events', EventsArray);
+
+    EventObject := TJSONObject.Create;
+    EventObject.AddPair('name', 'screen_view');
+
+    ParamsObject := TJSONObject.Create;
+    ParamsObject.AddPair('screen_name', FScreenName);
+
+    EventObject.AddPair('params', ParamsObject);
+    EventsArray.AddElement(EventObject);
+
+    Result := RootObject.ToJSON;
+  finally
+    RootObject.Free;
+  end;
 end;
 
 class function TModelGoogleAnalyticsScreenView.New(AParent: iControllerGoogleAnalytics): iModelGoogleScreeView;
