@@ -30,7 +30,7 @@ type
     function EventValue(Value: Integer): iModelGoogleEvent; overload;
     function Send: iCommand;
     function Execute: iCommand;
-    function BuidJsonEvent: string;
+    function BuildJsonEvent: string;
   End;
 
 implementation
@@ -46,27 +46,36 @@ begin
   FAction :=  Value;
 end;
 
-function TModelGoogleAnalyticsEvent.BuidJsonEvent: string;
+function TModelGoogleAnalyticsEvent.BuildJsonEvent: string;
+var
+  RootObject, EventObject, ParamsObject: TJSONObject;
+  EventsArray: TJSONArray;
 begin
-   result:=
-   StringReplace(
-    '{                                                      '+
-    '    "client_id":"'+FParent.ClienteID+'",               '+
-    '    "events":[                                         '+
-    '        {                                              '+
-    '            "name":"'+Trim(FEventLabel)+'",            '+
-    '            "params":{                                 '+
-    '                    "engagement_time_msec":"1000",     '+
-    '								     "session_id":"999",                '+
-    '                    "category":"'+FAction+'",          '+
-    '                    "action":"'+FEventLabel+'",        '+
-    '                    "label":"'+FEventLabel+'",         '+
-    '                    "value":'+FEventValue.ToString+'   '+
-    '               }                                       '+
-    '                                                       '+
-    '       }                                               '+
-    '   ]                                                   '+
-    '}                                                      ',#9,'',[rfreplaceall]);
+  RootObject := TJSONObject.Create;
+  try
+    RootObject.AddPair('client_id', FParent.ClienteID);
+
+    EventsArray := TJSONArray.Create;
+    RootObject.AddPair('events', EventsArray);
+
+    EventObject := TJSONObject.Create;
+    EventObject.AddPair('name', Trim(FEventLabel));
+
+    ParamsObject := TJSONObject.Create;
+    ParamsObject.AddPair('engagement_time_msec', '1000');
+    ParamsObject.AddPair('session_id', '999');
+    ParamsObject.AddPair('category', FAction);
+    ParamsObject.AddPair('action', FEventLabel);
+    ParamsObject.AddPair('label', FEventLabel);
+    ParamsObject.AddPair('value', FEventValue.ToString);
+
+    EventObject.AddPair('params', ParamsObject);
+    EventsArray.AddElement(EventObject);
+
+    Result := RootObject.ToJSON;
+  finally
+    RootObject.Free;
+  end;
 end;
 
 function TModelGoogleAnalyticsEvent.Action: String;
@@ -129,7 +138,7 @@ var
   ResponseStream: TStringStream;
 begin
   Result:=  Self;
-  ResponseStream:= TStringStream.Create(self.BuidJsonEvent,TEncoding.UTF8);
+  ResponseStream:= TStringStream.Create(self.BuildJsonEvent,TEncoding.UTF8);
   HTTPClient:= TNetHTTPClient.Create(nil);
   HTTPClient.CustomHeaders['Content-Type'] := 'application/json';
   try
@@ -162,7 +171,6 @@ begin
 end;
 
 end.
-
 
 
 

@@ -42,7 +42,7 @@ type
     function EventLabel(Value: String): iModelGoogleEvent; overload;
     function EventValue: Integer; overload;
     function EventValue(Value: Integer): iModelGoogleEvent; overload;
-    function BuidJsonEvent: String;
+    function BuildJsonEvent: String;
     function Send: iCommand;
   end;
 
@@ -60,7 +60,7 @@ type
     function ScreenName: String; overload;
     function ScreenName(Value: String): iModelGoogleScreeView; overload;
     function Send: iCommand;
-    function BuidJsonEvent: String;
+    function BuildJsonEvent: String;
   end;
 
   iModelGooglePageView = interface
@@ -72,7 +72,7 @@ type
     function Title: String; overload;
     function Title(Value: String): iModelGooglePageView; overload;
     function Send: iCommand;
-    function BuidJsonEvent: String;
+    function BuildJsonEvent: String;
   end;
 
   iModelGoogleSession = interface
@@ -80,10 +80,9 @@ type
     function Operation(AOperation: TOperationSession): iModelGoogleSession; overload;
     function Operation: TOperationSession; overload;
     function Send: iCommand;
-    function BuidJsonEvent: String;
+    function BuildJsonEvent: String;
   end;
 
 implementation
 
 end.
-
